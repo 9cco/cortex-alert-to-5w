@@ -15,6 +15,11 @@ def readFile(file_path):
         eprint("Could not find the file at:" + path)
         exit(2)
 
+def defang(domain_string):
+    if re.match(r"^(.*[^a-zA-Z0-9])?[a-zA-Z0-9]+\.[a-zA-Z0-9]+\.[a-zA-Z0-9]+.*", domain_string):
+        return "`" + re.sub("\.", "[.]", domain_string) + "`"
+    else:
+        return  "`" + domain_string + "`"
    
 def generateAlertDictionary(alert_string):
 
@@ -28,6 +33,7 @@ def generateAlertDictionary(alert_string):
         host_ip = match_object.expand(r"\g<4>")
         host_os = match_object.expand(r"\g<5>")
         username = match_object.expand(r"\g<6>")
+        incident_id = match_object.expand(r"\g<8>")
         action = match_object.expand(r"\g<10>")
         alert_source = match_object.expand(r"\g<9>")
         alert_name = match_object.expand(r"\g<12>")
@@ -50,9 +56,10 @@ def generateAlertDictionary(alert_string):
         local_port = match_object.expand(r"\g<46>")
         remote_ip = match_object.expand(r"\g<47>")
         remote_port = match_object.expand(r"\g<48>")
+        remote_host = match_object.expand(r"\g<49>")
         app_id = match_object.expand(r"\g<50>")
         source_zone = match_object.expand(r"\g<65>")
-        dest_zone = match_object.expand(r"\g<65>")
+        dest_zone = match_object.expand(r"\g<66>")
         url = match_object.expand(r"\g<72>")
         email_subject = match_object.expand(r"\g<73>")
         email_sender = match_object.expand(r"\g<74>")
@@ -70,6 +77,7 @@ def generateAlertDictionary(alert_string):
             "host_ip": host_ip,
             "host_os": host_os,
             "username": username,
+            "incident_id": incident_id,
             "action": action,
             "alert_source": alert_source,
             "alert_name": alert_name,
@@ -92,6 +100,7 @@ def generateAlertDictionary(alert_string):
             "local_port": local_port,
             "remote_ip": remote_ip,
             "remote_port": remote_port,
+            "remote_host": remote_host,
             "app_id": app_id,
             "source_zone": source_zone,
             "dest_zone": dest_zone,
@@ -112,7 +121,7 @@ def generateAlertDictionary(alert_string):
     return alert_dict    
 
 def printIfNonempty(description, input_string, ostream=sys.stdout, **kwargs):
-    if input_string != "":
+    if input_string != "" and input_string != "``":
         print(f"{description}: {input_string}", file=ostream, **kwargs)
     return
 
@@ -128,12 +137,14 @@ def printReport(alert_dict, ostream=sys.stdout):
         print("", file=ostream)
     printIfNonempty("Host", alert_dict['host'], ostream=ostream)
     printIfNonempty("Host IP", alert_dict['host_ip'], ostream=ostream)
+    if not re.match(r"^.*Windows.*$", alert_dict['host_os']) and alert_dict['host_os'] != "N/A":
+        printIfNonempty("OS", alert_dict['host_os'], ostream=ostream)
         
     # Where section
     print("\n\nWhere:  \n-----------------------------------------------------------------------------  \n", file=ostream)
     if alert_dict['source_zone'] != "" and alert_dict['dest_zone'] != "":
         print(f"From {alert_dict['source_zone']} to {alert_dict['dest_zone']}", file=ostream)
-    printIfNonempty("Domain", alert_dict['domain'], ostream=ostream)
+    printIfNonempty("Domain", defang(alert_dict['domain']), ostream=ostream)
     
     # What section
     print("\n\nWhat:  \n-----------------------------------------------------------------------------  \n", file=ostream)
@@ -185,7 +196,11 @@ def printReport(alert_dict, ostream=sys.stdout):
         
     if alert_dict['remote_ip'] != '':
         print("", file=ostream)
-        print(f"Network connection: {alert_dict['local_ip']}:{alert_dict['local_port']} --> {alert_dict['remote_ip']}:{alert_dict['remote_port']}    ({alert_dict['app_id']})")
+        print(f"Network connection: {alert_dict['local_ip']}:{alert_dict['local_port']} --> {alert_dict['remote_ip']}:{alert_dict['remote_port']}    ({alert_dict['app_id']}", file=ostream, end="")
+        if alert_dict['remote_host'] != '':
+            print(f", {defang(alert_dict['remote_host'])})", file=ostream)
+        else:
+            print(")", file=ostream)
         printIfNonempty("Key", alert_dict['registry_key'], ostream=ostream)
         
     if alert_dict['email_subject'] != '':
@@ -195,10 +210,10 @@ def printReport(alert_dict, ostream=sys.stdout):
         printIfNonempty("From", alert_dict['email_sender'], ostream=ostream)
         printIfNonempty("To", alert_dict['email_recipient'], ostream=ostream)
     
-    printIfNonempty("URL", alert_dict['url'], ostream=ostream)
+    printIfNonempty("URL", defang(alert_dict['url']), ostream=ostream)
     printIfNonempty("User agent", alert_dict['user_agent'], ostream=ostream)
-    printIfNonempty("Misc", alert_dict['misc'], ostream=ostream)
-    printIfNonempty("DNS query", alert_dict['dns_query'], ostream=ostream)
+    printIfNonempty("Misc", defang(alert_dict['misc']), ostream=ostream)
+    printIfNonempty("DNS query", defang(alert_dict['dns_query']), ostream=ostream)
     
     # Why section
     print("\n\nWhy:  \n-----------------------------------------------------------------------------  \n\n", file=ostream)
@@ -211,3 +226,8 @@ def printReport(alert_dict, ostream=sys.stdout):
     # Footer section
     print("\n\n\n_____________________________________________________________________________", file=ostream)
     print("# Other notes\n\nSearching\n```XQL\n```", file=ostream)
+    
+def getDay(timestamp):
+    match_object = re.search("([0-9]{1,2})[^0-9]{2}", timestamp)
+    return match_object.expand(r"\g<1>")
+    

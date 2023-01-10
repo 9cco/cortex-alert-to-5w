@@ -1,7 +1,7 @@
 import sys
 import os
 
-from alert_transform_funcs import printReport, eprint, readFile, generateAlertDictionary
+from alert_transform_funcs import printReport, eprint, readFile, generateAlertDictionary, getDay
 
 def printHelp():
     eprint("py check_ips.py <filename>\n")
@@ -21,7 +21,7 @@ def main(argv):
     alert_string = readFile(file_path)
     alert_dict = generateAlertDictionary(alert_string)
     
-    output_filename = alert_dict['alert_id'] + "_output.md"
+    output_filename = getDay(alert_dict['timestamp']) + "_(customer_id)_" + alert_dict['incident_id'] + ".md"
     if os.path.exists(output_filename):
         print("File already exists")
         
