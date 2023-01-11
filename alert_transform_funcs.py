@@ -2,6 +2,8 @@ import os
 import re
 import sys
 
+from api_funcs import printVTHash, printVTIP
+
 # Function for printing to stderr
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -16,10 +18,12 @@ def readFile(file_path):
         exit(2)
 
 def defang(domain_string):
-    if re.match(r"^(.*[^a-zA-Z0-9])?[a-zA-Z0-9]+\.[a-zA-Z0-9]+\.[a-zA-Z0-9]+.*", domain_string):
-        return "`" + re.sub("\.", "[.]", domain_string) + "`"
+    # Separate out the domains from the string.
+    match_object = re.match("^(.*?)([\w\-]+)\.([\w\-]+)\.([\w\-]+)((?=\.[\w\-]*){0,})([\w\-/]+\.[\w]+[\w\-?=/&]*)?(.*)$", domain_string)
+    if match_object:
+        return match_object.expand(r'\1`\2[.]\3[.]\4\5\6`\7')
     else:
-        return  "`" + domain_string + "`"
+        return  domain_string
    
 def generateAlertDictionary(alert_string):
 
@@ -125,10 +129,24 @@ def printIfNonempty(description, input_string, ostream=sys.stdout, **kwargs):
         print(f"{description}: {input_string}", file=ostream, **kwargs)
     return
 
-def printReport(alert_dict, ostream=sys.stdout):
+def printHostIP(ip_string, ostream=sys.stdout):
+    if ip_string == "":
+        return
+    else:
+        print("Host IP: ", end="", file=ostream)
+        # If there are multiple IPs, the string will contain a ","
+        if re.match(r"^(.*),(.*)$", ip_string):
+            print(re.sub(",", ", ", ip_string), file=ostream)
+        else:
+            print(ip_string, file=ostream)
+        return
+
+
+def printReport(alert_dict, vt_api = '', conf_dict={}, ostream=sys.stdout):
 
     # Title section
-    print("\n=============================================================================\n\n", file=ostream)
+    print(f" | ID-{alert_dict['incident_id']}", file=ostream)
+    print("=============================================================================\n\n", file=ostream)
     
     # Who section
     print("Who:  \n-----------------------------------------------------------------------------  \n", file=ostream)
@@ -136,10 +154,10 @@ def printReport(alert_dict, ostream=sys.stdout):
     if alert_dict["username"] != "" and (alert_dict['host'] != "" or alert_dict['host_ip'] != ''):
         print("", file=ostream)
     printIfNonempty("Host", alert_dict['host'], ostream=ostream)
-    printIfNonempty("Host IP", alert_dict['host_ip'], ostream=ostream)
+    printHostIP(alert_dict['host_ip'], ostream=ostream)
     if not re.match(r"^.*Windows.*$", alert_dict['host_os']) and alert_dict['host_os'] != "N/A":
         printIfNonempty("OS", alert_dict['host_os'], ostream=ostream)
-        
+    
     # Where section
     print("\n\nWhere:  \n-----------------------------------------------------------------------------  \n", file=ostream)
     if alert_dict['source_zone'] != "" and alert_dict['dest_zone'] != "":
@@ -150,7 +168,7 @@ def printReport(alert_dict, ostream=sys.stdout):
     print("\n\nWhat:  \n-----------------------------------------------------------------------------  \n", file=ostream)
     printIfNonempty("Alert name", alert_dict['alert_name'], ostream=ostream)
     if not re.match(r"^\[ocd-xdr.*", alert_dict['alert_name']):
-        printIfNonempty("Description", alert_dict['description'], ostream=ostream)
+        printIfNonempty("Description", defang(alert_dict['description']), ostream=ostream)
     
     if alert_dict['action'] != "":
         print("", file=ostream)
@@ -158,42 +176,57 @@ def printReport(alert_dict, ostream=sys.stdout):
     printIfNonempty("Action", alert_dict['action'], ostream=ostream)
     printIfNonempty("Alert source", alert_dict['alert_source'], ostream=ostream)
     printIfNonempty("Module", alert_dict['module'], ostream=ostream)
-        
+    
+    # # Processes subsection
     if alert_dict['initiator_cmd'] != '':
         print("", file=ostream)
         print("Initiator details:", file=ostream)
         print(f"Command: `{alert_dict['initiator_cmd']}`", file=ostream)
-        printIfNonempty("SHA256", alert_dict['initiator_sha256'], ostream=ostream)
+        file_hash = alert_dict['initiator_sha256']
+        printIfNonempty("SHA256", file_hash, ostream=ostream)
         printIfNonempty("Signer", alert_dict['initiator_signature'], ostream=ostream)
+        printVTHash(file_hash, vt_api, ostream=ostream)
     
     if alert_dict['cgo_cmd'] != '':
         print("", file=ostream)
         print("Causality group owner details:", file=ostream)
-        print(f"Command: `{alert_dict['cgo_cmd']}`", file=ostream)
-        printIfNonempty("SHA256", alert_dict['cgo_sha256'], ostream=ostream)
-        printIfNonempty("Signer", alert_dict['cgo_signature'], ostream=ostream)
+        if alert_dict['cgo_cmd'] != alert_dict['initiator_cmd']:
+            print(f"Command: `{alert_dict['cgo_cmd']}`", file=ostream)
+            file_hash = alert_dict['cgo_sha256']
+            printIfNonempty("SHA256", file_hash, ostream=ostream)
+            printIfNonempty("Signer", alert_dict['cgo_signature'], ostream=ostream)
+            printVTHash(file_hash, vt_api, ostream=ostream)
+        else:
+            print("Same as initiator.", file=ostream)
     
     if alert_dict['target_process_cmd'] != '':
         print("", file=ostream)
         print("Target process details:", file=ostream)
         print(f"Command: `{alert_dict['target_process_cmd']}`", file=ostream)
-        printIfNonempty("SHA256", alert_dict['target_process_sha256'], ostream=ostream)
+        file_hash = alert_dict['target_process_sha256']
+        printIfNonempty("SHA256", file_hash, ostream=ostream)
         printIfNonempty("Signer", alert_dict['target_process_signature'], ostream=ostream)
+        printVTHash(file_hash, vt_api, ostream=ostream)
     
+    # # File subsection
     if alert_dict['file_path'] != '':
         print("", file=ostream)
         print("File details:", file=ostream)
         printIfNonempty("Path", alert_dict['file_path'], ostream=ostream)
-        printIfNonempty("SHA256", alert_dict['file_sha256'], ostream=ostream)
+        file_hash = alert_dict['file_sha256']
+        printIfNonempty("SHA256", file_hash, ostream=ostream)
+        printVTHash(file_hash, vt_api, ostream=ostream)
     
     printIfNonempty("Macro SHA256", alert_dict['file_macro_sha256'], ostream=ostream)
     
+    # # Registry subsection
     if alert_dict['registry_data'] != '':
         print("", file=ostream)
         print("Registry details:", file=ostream)
         printIfNonempty("Key", alert_dict['registry_key'], ostream=ostream)
         printIfNonempty("Data", alert_dict['registry_data'], ostream=ostream)
-        
+    
+    # # Network connection subsection
     if alert_dict['remote_ip'] != '':
         print("", file=ostream)
         print(f"Network connection: {alert_dict['local_ip']}:{alert_dict['local_port']} --> {alert_dict['remote_ip']}:{alert_dict['remote_port']}    ({alert_dict['app_id']}", file=ostream, end="")
@@ -201,8 +234,10 @@ def printReport(alert_dict, ostream=sys.stdout):
             print(f", {defang(alert_dict['remote_host'])})", file=ostream)
         else:
             print(")", file=ostream)
-        printIfNonempty("Key", alert_dict['registry_key'], ostream=ostream)
+        printVTIP(alert_dict['local_ip'], vt_api, ostream=ostream)
+        printVTIP(alert_dict['remote_ip'], vt_api, ostream=ostream)
         
+    # # Email subsection
     if alert_dict['email_subject'] != '':
         print("", file=ostream)
         print("Email details:", file=ostream)
