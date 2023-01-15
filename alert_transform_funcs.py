@@ -2,7 +2,7 @@ import os
 import re
 import sys
 
-from api_funcs import printVTHash, printVTIP
+from api_funcs import printVTHash, printVTAnalysis
 
 # Function for printing to stderr
 def eprint(*args, **kwargs):
@@ -19,7 +19,7 @@ def readFile(file_path):
 
 def defang(domain_string):
     # Separate out the domains from the string.
-    match_object = re.match("^(.*?)([\w\-]+)\.([\w\-]+)\.([\w\-]+)((?=\.[\w\-]*){0,})([\w\-/]+\.[\w]+[\w\-?=/&]*)?(.*)$", domain_string)
+    match_object = re.match("^(.*?)([\w\-]+)\.([\w\-]+)\.([\w\-]+)((?:\.[\w\-]+){0,})([\w\-/]+\.[\w]+[\w\-?=/&]*)?(.*)$", domain_string)
     if match_object:
         return match_object.expand(r'\1`\2[.]\3[.]\4\5\6`\7')
     else:
@@ -141,6 +141,23 @@ def printHostIP(ip_string, ostream=sys.stdout):
             print(ip_string, file=ostream)
         return
 
+def formatZones(string):
+    split_string = string.split(',')
+    # Check if string only contains duplicates
+    if [split_string[0]]*len(split_string) == split_string:
+        return split_string[0]
+    # If normal string: make some space between commas.
+    elif len(split_string) > 0:
+        return re.sub(r',([^,])', r', \1', source_zone)
+    else:
+        return string
+
+def printWhere(source_zone, dest_zone, domain, ostream=sys.stdout):
+    if source_zone != "" and dest_zone != "":
+        source_zone = formatZones(source_zone)
+        dest_zone = formatZones(dest_zone)
+        print(f"From {source_zone} to {dest_zone}", file=ostream)
+    printIfNonempty("Domain", domain, ostream=ostream)
 
 def printReport(alert_dict, vt_api = '', conf_dict={}, ostream=sys.stdout):
 
@@ -160,9 +177,7 @@ def printReport(alert_dict, vt_api = '', conf_dict={}, ostream=sys.stdout):
     
     # Where section
     print("\n\nWhere:  \n-----------------------------------------------------------------------------  \n", file=ostream)
-    if alert_dict['source_zone'] != "" and alert_dict['dest_zone'] != "":
-        print(f"From {alert_dict['source_zone']} to {alert_dict['dest_zone']}", file=ostream)
-    printIfNonempty("Domain", defang(alert_dict['domain']), ostream=ostream)
+    printWhere(alert_dict['source_zone'], alert_dict['dest_zone'], alert_dict['domain'], ostream=ostream)
     
     # What section
     print("\n\nWhat:  \n-----------------------------------------------------------------------------  \n", file=ostream)
@@ -230,13 +245,15 @@ def printReport(alert_dict, vt_api = '', conf_dict={}, ostream=sys.stdout):
     if alert_dict['remote_ip'] != '':
         print("", file=ostream)
         print(f"Network connection: {alert_dict['local_ip']}:{alert_dict['local_port']} --> {alert_dict['remote_ip']}:{alert_dict['remote_port']}    ({alert_dict['app_id']}", file=ostream, end="")
+        
         if alert_dict['remote_host'] != '':
             print(f", {defang(alert_dict['remote_host'])})", file=ostream)
         else:
             print(")", file=ostream)
-        printVTIP(alert_dict['local_ip'], vt_api, ostream=ostream)
-        printVTIP(alert_dict['remote_ip'], vt_api, ostream=ostream)
-        
+            
+        if vt_api != '':
+            printVTAnalysis(vt_api, alert_dict['local_ip'], alert_dict['remote_ip'], ostream=ostream)
+    
     # # Email subsection
     if alert_dict['email_subject'] != '':
         print("", file=ostream)
