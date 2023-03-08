@@ -40,6 +40,8 @@ def main(argv):
     
     settings_file = "conf.json"
     vt_api_file = "virustotal_api_key.txt"
+    abuseip_file = "abuseipdb_api_key.txt"
+    chatgpt_file = "chatgpt_api_key.txt"
     
     try:
         # Treat everything after the python script as a path to the input file.
@@ -54,6 +56,16 @@ def main(argv):
     except:
         eprint("Failed to get VT API-key")
         sys.exit(3)
+    try:
+        ab_api = getAPIKey(abuseip_file)
+    except:
+        eprint("Failed to get AbuseIPDB API-key")
+        sys.exit(3)
+    try:
+        ch_api = getAPIKey(chatgpt_file)
+    except:
+        eprint("Failed to get ChatGPT API-key")
+        sys.exit(3)
     
     conf_dict = getSettings(settings_file)
     
@@ -65,7 +77,7 @@ def main(argv):
         eprint("Overwriting existing file.")
         
     with open(output_filename, "w") as file:
-        printReport(alert_dict, vt_api = vt_api, conf_dict=conf_dict, ostream=file)
+        printReport(alert_dict, vt_api = vt_api, ab_api = ab_api, ch_api = ch_api, conf_dict=conf_dict, ostream=file)
     
     cmd = "\"C:\\Program Files\\Notepad++\\notepad++.exe\" " + output_filename
     os.system(cmd)

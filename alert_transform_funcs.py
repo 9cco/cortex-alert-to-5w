@@ -2,7 +2,7 @@ import os
 import re
 import sys
 
-from api_funcs import printVTHash, printVTAnalysis
+from api_funcs import printVTHash, printIPAnalysis, ipIsRemote, printChatGPTAnswer, printChatGPTProcess
 
 # Function for printing to stderr
 def eprint(*args, **kwargs):
@@ -28,8 +28,9 @@ def defang(domain_string):
 def generateAlertDictionary(alert_string):
 
     try:
-        pattern = "^([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t"
+        pattern = "^([^\t]*)\t([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?"
         match_object = re.search(pattern, alert_string)
+        assert (match_object != None), "Did not find any matches of regular expression"
         
         alert_id = match_object.expand(r"\g<1>")
         timestamp = match_object.expand(r"\g<2>")
@@ -42,12 +43,15 @@ def generateAlertDictionary(alert_string):
         alert_source = match_object.expand(r"\g<9>")
         alert_name = match_object.expand(r"\g<12>")
         description = match_object.expand(r"\g<13>")
+        initiator_name = match_object.expand(r"\g<16>")
         initiator_cmd = match_object.expand(r"\g<20>")
         initiator_sha256 = match_object.expand(r"\g<21>")
         initiator_signature = match_object.expand(r"\g<24>")
+        CGO_name = match_object.expand(r"\g<26>")
         CGO_cmd = match_object.expand(r"\g<27>")
         CGO_sha256 = match_object.expand(r"\g<29>")
         CGO_signature = match_object.expand(r"\g<32>")
+        target_process_name = match_object.expand(r"\g<34>")
         target_process_cmd = match_object.expand(r"\g<35>")
         target_process_sha256 = match_object.expand(r"\g<38>")
         target_process_signature = match_object.expand(r"\g<37>")
@@ -62,6 +66,7 @@ def generateAlertDictionary(alert_string):
         remote_port = match_object.expand(r"\g<48>")
         remote_host = match_object.expand(r"\g<49>")
         app_id = match_object.expand(r"\g<50>")
+        os_sub_type = match_object.expand(r"\g<64>")
         source_zone = match_object.expand(r"\g<65>")
         dest_zone = match_object.expand(r"\g<66>")
         url = match_object.expand(r"\g<72>")
@@ -72,7 +77,7 @@ def generateAlertDictionary(alert_string):
         domain = match_object.expand(r"\g<84>")
         module = match_object.expand(r"\g<86>")
         dns_query = match_object.expand(r"\g<88>")
-        user_agent = match_object.expand(r"\g<88>")
+        user_agent = match_object.expand(r"\g<103>")
 
         alert_dict = {
             "alert_id": alert_id,
@@ -86,12 +91,15 @@ def generateAlertDictionary(alert_string):
             "alert_source": alert_source,
             "alert_name": alert_name,
             "description": description,
+            "initiator_name": initiator_name,
             "initiator_cmd": initiator_cmd,
             "initiator_sha256": initiator_sha256,
             "initiator_signature": initiator_signature,
+            "cgo_name": CGO_name,
             "cgo_cmd": CGO_cmd,
             "cgo_sha256": CGO_sha256,
             "cgo_signature": CGO_signature,
+            "target_process_name": target_process_name,
             "target_process_cmd": target_process_cmd,
             "target_process_sha256": target_process_sha256,
             "target_process_signature": target_process_signature,
@@ -106,6 +114,7 @@ def generateAlertDictionary(alert_string):
             "remote_port": remote_port,
             "remote_host": remote_host,
             "app_id": app_id,
+            "os_sub_type": os_sub_type,
             "source_zone": source_zone,
             "dest_zone": dest_zone,
             "url": url,
@@ -118,8 +127,12 @@ def generateAlertDictionary(alert_string):
             "dns_query": dns_query,
             "user_agent": user_agent
         }
+        
+    except Exception as e:
+        eprint(e)
+        exit(2)
     except:
-        eprint("Could not generate dictionary")
+        eprint(f"Could not generate dictionary for alert string: \n{alert_string}")
         exit(2)
         
     return alert_dict    
@@ -152,36 +165,103 @@ def formatZones(string):
     else:
         return string
 
-def printWhere(source_zone, dest_zone, domain, ostream=sys.stdout):
+# Takes an IPv4 address as a string and returns a bool on whether or not the IP is internal or external.
+def isInternalIP(ip_address):
+    return not ipIsRemote(ip_address)
+    #if re.match(r"^[^0-9]*10\.[0-9]+\.[0-9]+\.[0-9]+", ip_address) or re.match(r"^[^0-9]*192\.168\.[0-9]+\.[0-9]+", ip_address) or re.match(r"^[^0-9]*172\.(?:1[6-9]|2[0-9]|3[0-1])\.[0-9]+\.[0-9]+", ip_address) or re.match(r"^[^0-9]*169\.254\.[0-9]+\.[0-9]+", ip_address):
+    #    return True
+    #return False
+
+def printWhere(host, local_ip, remote_ip, source_zone, dest_zone, domain, ostream=sys.stdout):
     if source_zone != "" and dest_zone != "":
         source_zone = formatZones(source_zone)
         dest_zone = formatZones(dest_zone)
         print(f"From {source_zone} to {dest_zone}", file=ostream)
-    printIfNonempty("Domain", domain, ostream=ostream)
+    elif domain != "" and domain != "``":
+        print(f"Domain: {domain}", file=ostream)
+    elif domain == "" and source_zone == "" and dest_zone == "" and host != "" and remote_ip == "":
+        print("Internal endpoint w/ agent installed", file=ostream)
+    # Attempt to recognize category of assets
+    elif local_ip != "" and remote_ip != "":
+        if isInternalIP(local_ip) and isInternalIP(remote_ip):
+            print("Internal network assets", file=ostream)
+        elif not isInternalIP(local_ip) and not isInternalIP(remote_ip):
+            print("WAN", file=ostream)
+        else:
+            print("From ", end="", file=ostream)
+            if isInternalIP(local_ip):
+                print("Internal network", end="", file=ostream)
+            else:
+                print("WAN", end="", file=ostream)
+            print(" to ", end="", file=ostream)
+            if isInternalIP(remote_ip):
+                print("Internal endpoint", file=ostream)
+            else:
+                print("WAN", file=ostream)
+    return
 
-def printReport(alert_dict, vt_api = '', conf_dict={}, ostream=sys.stdout):
+def hasCommonName(ps_name):
+    common_names = '''
+explorer.exe
+winlogon.exe
+chrome.exe 
+edge.exe
+firefox.exe
+outlook.exe
+sh
+bash
+cmd.exe
+powershell.exe
+whoami.exe
+'''
+    name_lines = common_names.split('\n')
+    if ps_name.lower() in name_lines:
+        return True
+    return False
+    
+def hasCommonSignature(ps_signature):
+    common_signatures = '''
+Microsoft Corporation
+Google LLC
+'''
+    signature_lines = common_signatures.split('\n')
+    if ps_signature in signature_lines:
+        return True
+    return False
+
+def isTrustedProcess(ps_name, ps_signature):
+    if (hasCommonName(ps_name) and ps_signature != "") or hasCommonSignature(ps_signature):
+        return True
+    return False
+
+def printReport(alert_dict, vt_api = '', ab_api = '', ch_api = '', conf_dict={}, ostream=sys.stdout):
 
     # Title section
     print(f" | ID-{alert_dict['incident_id']}", file=ostream)
     print("=============================================================================\n\n", file=ostream)
     
     # Who section
-    print("Who:  \n-----------------------------------------------------------------------------  \n", file=ostream)
+    print("Who:  \n-------------------------------------------  \n", file=ostream)
     printIfNonempty("User", alert_dict['username'], ostream=ostream)
     if alert_dict["username"] != "" and (alert_dict['host'] != "" or alert_dict['host_ip'] != ''):
         print("", file=ostream)
     printIfNonempty("Host", alert_dict['host'], ostream=ostream)
     printHostIP(alert_dict['host_ip'], ostream=ostream)
     if not re.match(r"^.*Windows.*$", alert_dict['host_os']) and alert_dict['host_os'] != "N/A":
-        printIfNonempty("OS", alert_dict['host_os'], ostream=ostream)
+        if alert_dict['host_os'] != "":
+            print(f"OS: {alert_dict['host_os']}", end="", file=ostream)
+            if alert_dict['os_sub_type'] != "":
+                print(f" ({alert_dict['os_sub_type']})", file=ostream)
+            else:
+                print("", file=ostream)
     
     # Where section
-    print("\n\nWhere:  \n-----------------------------------------------------------------------------  \n", file=ostream)
-    printWhere(alert_dict['source_zone'], alert_dict['dest_zone'], alert_dict['domain'], ostream=ostream)
+    print("\n\nWhere:  \n-------------------------------------------  \n", file=ostream)
+    printWhere(alert_dict['host'], alert_dict['local_ip'], alert_dict['remote_ip'], alert_dict['source_zone'], alert_dict['dest_zone'], alert_dict['domain'], ostream=ostream)
     
     # What section
-    print("\n\nWhat:  \n-----------------------------------------------------------------------------  \n", file=ostream)
-    printIfNonempty("Alert name", alert_dict['alert_name'], ostream=ostream)
+    print("\n\nWhat:  \n-------------------------------------------  \n", file=ostream)
+    printIfNonempty("Alert name", defang(alert_dict['alert_name']), ostream=ostream)
     if not re.match(r"^\[ocd-xdr.*", alert_dict['alert_name']):
         printIfNonempty("Description", defang(alert_dict['description']), ostream=ostream)
     
@@ -200,7 +280,12 @@ def printReport(alert_dict, vt_api = '', conf_dict={}, ostream=sys.stdout):
         file_hash = alert_dict['initiator_sha256']
         printIfNonempty("SHA256", file_hash, ostream=ostream)
         printIfNonempty("Signer", alert_dict['initiator_signature'], ostream=ostream)
-        printVTHash(file_hash, vt_api, ostream=ostream)
+        if not isTrustedProcess(alert_dict['initiator_name'], alert_dict['initiator_signature']):
+            printVTHash(file_hash, vt_api, ostream=ostream)
+        if not hasCommonName(alert_dict['initiator_name']):
+            print("", file=ostream)
+            printChatGPTProcess(alert_dict['initiator_name'], ch_api, ostream=ostream)
+        
     
     if alert_dict['cgo_cmd'] != '':
         print("", file=ostream)
@@ -210,7 +295,11 @@ def printReport(alert_dict, vt_api = '', conf_dict={}, ostream=sys.stdout):
             file_hash = alert_dict['cgo_sha256']
             printIfNonempty("SHA256", file_hash, ostream=ostream)
             printIfNonempty("Signer", alert_dict['cgo_signature'], ostream=ostream)
-            printVTHash(file_hash, vt_api, ostream=ostream)
+            if not isTrustedProcess(alert_dict['cgo_name'], alert_dict['cgo_signature']):
+                printVTHash(file_hash, vt_api, ostream=ostream)
+            if not hasCommonName(alert_dict['cgo_name']) and alert_dict['cgo_name'] != alert_dict['initiator_name']:
+                print("", file=ostream)
+                printChatGPTProcess(alert_dict['initiator_name'], ch_api, ostream=ostream)
         else:
             print("Same as initiator.", file=ostream)
     
@@ -221,7 +310,11 @@ def printReport(alert_dict, vt_api = '', conf_dict={}, ostream=sys.stdout):
         file_hash = alert_dict['target_process_sha256']
         printIfNonempty("SHA256", file_hash, ostream=ostream)
         printIfNonempty("Signer", alert_dict['target_process_signature'], ostream=ostream)
-        printVTHash(file_hash, vt_api, ostream=ostream)
+        if not isTrustedProcess(alert_dict['target_process_name'], alert_dict['target_process_signature']):
+            printVTHash(file_hash, vt_api, ostream=ostream)
+        if not alert_dict['target_process_name'] in [alert_dict['initiator_name'], alert_dict['cgo_name']] and not hasCommonName(alert_dict['target_process_name']) :
+            print("", file=ostream)
+            printChatGPTProcess(alert_dict['target_process_name'], ch_api, ostream=ostream)
     
     # # File subsection
     if alert_dict['file_path'] != '':
@@ -247,12 +340,15 @@ def printReport(alert_dict, vt_api = '', conf_dict={}, ostream=sys.stdout):
         print(f"Network connection: {alert_dict['local_ip']}:{alert_dict['local_port']} --> {alert_dict['remote_ip']}:{alert_dict['remote_port']}    ({alert_dict['app_id']}", file=ostream, end="")
         
         if alert_dict['remote_host'] != '':
-            print(f", {defang(alert_dict['remote_host'])})", file=ostream)
+            if isInternalIP(alert_dict['remote_ip']):
+                remote_host = alert_dict['remote_host']
+            else:
+                remote_host = defang(alert_dict['remote_host'])
+            print(f", {remote_host})", file=ostream)
         else:
             print(")", file=ostream)
             
-        if vt_api != '':
-            printVTAnalysis(vt_api, alert_dict['local_ip'], alert_dict['remote_ip'], ostream=ostream)
+        printIPAnalysis(alert_dict['local_ip'], alert_dict['remote_ip'], vt_api = vt_api, ab_api = ab_api, ostream=ostream)
     
     # # Email subsection
     if alert_dict['email_subject'] != '':
@@ -262,16 +358,24 @@ def printReport(alert_dict, vt_api = '', conf_dict={}, ostream=sys.stdout):
         printIfNonempty("From", alert_dict['email_sender'], ostream=ostream)
         printIfNonempty("To", alert_dict['email_recipient'], ostream=ostream)
     
-    printIfNonempty("URL", defang(alert_dict['url']), ostream=ostream)
+    url = ""
+    if alert_dict['url'] != "":
+        if isInternalIP(alert_dict['remote_ip']):
+            url = alert_dict['url']
+        else:
+            url = defang(alert_dict['url'])
+    printIfNonempty("URL", url, ostream=ostream)
     printIfNonempty("User agent", alert_dict['user_agent'], ostream=ostream)
     printIfNonempty("Misc", defang(alert_dict['misc']), ostream=ostream)
     printIfNonempty("DNS query", defang(alert_dict['dns_query']), ostream=ostream)
     
     # Why section
-    print("\n\nWhy:  \n-----------------------------------------------------------------------------  \n\n", file=ostream)
+    print("\n\nWhy:  \n-------------------------------------------  \n", file=ostream)
+    
+    printChatGPTAnswer(alert_dict, ch_api, ostream=ostream)
     
     # When section
-    print("\n\nWhen:  \n-----------------------------------------------------------------------------  \n", file=ostream)
+    print("\n\nWhen:  \n-------------------------------------------  \n", file=ostream)
     if alert_dict['timestamp'] != '':
         print(alert_dict['timestamp'] + " UTC", file=ostream)
     
