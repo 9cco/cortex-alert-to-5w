@@ -38,11 +38,11 @@ def generateAlertDictionary(alert_string):
         host_ip = match_object.expand(r"\g<4>")
         host_os = match_object.expand(r"\g<5>")
         username = match_object.expand(r"\g<6>")
-        incident_id = match_object.expand(r"\g<8>")
-        action = match_object.expand(r"\g<10>")
-        alert_source = match_object.expand(r"\g<9>")
-        alert_name = match_object.expand(r"\g<12>")
-        description = match_object.expand(r"\g<13>")
+        incident_id = match_object.expand(r"\g<9>")
+        alert_source = match_object.expand(r"\g<10>")
+        action = match_object.expand(r"\g<11>")
+        alert_name = match_object.expand(r"\g<13>")
+        description = match_object.expand(r"\g<14>")
         initiator_name = match_object.expand(r"\g<16>")
         initiator_cmd = match_object.expand(r"\g<20>")
         initiator_sha256 = match_object.expand(r"\g<21>")
@@ -203,6 +203,7 @@ def printWhere(host, local_ip, remote_ip, source_zone, dest_zone, domain, ostrea
 def hasCommonName(ps_name):
     common_names = '''
 explorer.exe
+iexplore.exe
 winlogon.exe
 chrome.exe 
 edge.exe
@@ -299,7 +300,7 @@ def printReport(alert_dict, vt_api = '', ab_api = '', ch_api = '', conf_dict={},
                 printVTHash(file_hash, vt_api, ostream=ostream)
             if not hasCommonName(alert_dict['cgo_name']) and alert_dict['cgo_name'] != alert_dict['initiator_name']:
                 print("", file=ostream)
-                printChatGPTProcess(alert_dict['initiator_name'], ch_api, ostream=ostream)
+                printChatGPTProcess(alert_dict['cgo_name'], ch_api, ostream=ostream)
         else:
             print("Same as initiator.", file=ostream)
     
