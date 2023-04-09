@@ -57,3 +57,9 @@ def isTrustedProcess(ps_name, ps_signature, settings_dict):
         hasCommonSignature(ps_signature, settings_dict['common-signatures']):
         return True
     return False
+
+def returnIfNonempty(description, input_string, end="\n"):
+    if input_string != "" and input_string != "``":
+        return f"{description}: {input_string}" + end
+    else:
+        return "" + end

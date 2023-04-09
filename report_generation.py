@@ -138,6 +138,8 @@ def generateReport(settings_dict, credentials):
     # Based on the available information in the alert, make necessary lookups. These will
     # be used later when generating the report.
     apis_dict = makeAsyncAPILookups(alert_dict, settings_dict, credentials)
+    pprint(apis_dict)
+    exit(-1)
     
     
     return report
