@@ -1,45 +1,10 @@
-# Places where we have found api lookups:
-"""
-if alert_dict['initiator_cmd'] != '':
-        ...
-        if not isTrustedProcess(alert_dict['initiator_name'], alert_dict['initiator_signature']):
-            printVTHash(file_hash, vt_api, ostream=ostream)
-        if not hasCommonName(alert_dict['initiator_name']):
-            print("", file=ostream)
-            printChatGPTProcess(alert_dict['initiator_name'], ch_api, ostream=ostream)
-            
-if alert_dict['cgo_cmd'] != '':
-    if alert_dict['cgo_cmd'] != alert_dict['initiator_cmd']:
-        ... same as above
-
-if alert_dict['target_process_cmd'] != '':
-    ...
-    if not isTrustedProcess(alert_dict['target_process_name'], alert_dict['target_process_signature']):
-            printVTHash(file_hash, vt_api, ostream=ostream)
-        if not alert_dict['target_process_name'] in [alert_dict['initiator_name'], alert_dict['cgo_name']] and not hasCommonName(alert_dict['target_process_name']) :
-            print("", file=ostream)
-            printChatGPTProcess(alert_dict['target_process_name'], ch_api, ostream=ostream)
-
-if alert_dict['file_path'] != '':
-    ...
-    printVTHash(file_hash, vt_api, ostream=ostream)
-
-if alert_dict['remote_ip'] != '':
-    printIPAnalysis(alert_dict['local_ip'], alert_dict['remote_ip'], vt_api = vt_api, ab_api = ab_api, ostream=ostream)
-    
-# Why section
-printChatGPTAnswer(alert_dict, ch_api, ostream=ostream)
-
-"""
-
 import asyncio
 import aiohttp
 import re
 import sys
-import ipaddress
 import textwrap
 
-from aux_functions import isTrustedProcess, hasCommonName, returnIfNonempty, matchesAnyOne
+from aux_functions import isTrustedProcess, hasCommonName, returnIfNonempty, matchesAnyOne, ipIsRemote
 
 def searchCredential(credentials, search_string):
     for cred in credentials:
@@ -101,13 +66,6 @@ def formatVTVerdict(malicious, total_vendors, date, positive_vendors):
     else:
         return "Virustotal: clean"
     return
-
-def ipIsRemote(ip):
-    return True # Debug
-    if ipaddress.ip_address(ip) in ipaddress.ip_network('192.168.0.0/16') or ipaddress.ip_address(ip) in ipaddress.ip_network('10.0.0.0/8') or ipaddress.ip_address(ip) in ipaddress.ip_network('172.16.0.0/12') or ipaddress.ip_address(ip) in ipaddress.ip_network('169.254.0.0/16'):
-        return False
-    else:
-        return True
 
 async def virustotalHashReport(session, file_hash, vt_api, id):
     report = ' '
@@ -326,22 +284,25 @@ def containsSensitiveInformation(infos, searches):
     
 # Go through all information that will be sent to chat GPT and make the user verify that the information can be sent to chat GPT
 def verifyChatGPTUsage(alert_dict, settings_dict):
-    # Gather all sending information:
-    info_fields = [alert_dict['initiator_name'], alert_dict['cgo_name'], alert_dict['target_process_name'], alert_dict['alert_name']]
-    
-    if containsSensitiveInformation(info_fields, settings_dict['info-searches']):
-        return False
-    
-    print("ChatGPT may be sent the following information:\n-------------------")
-    for field in info_fields:
-        if field != '':
-            print(field)
-    
-    choice = input(f"-------------------\nConfirm that no sensitive information will be sent (y/n): ")
-    if 'y' in choice.lower():
-        return True
+    if settings_dict['verify-outgoing']:
+        # Gather all sending information:
+        info_fields = [alert_dict['initiator_name'], alert_dict['cgo_name'], alert_dict['target_process_name'], alert_dict['alert_name']]
+        
+        if containsSensitiveInformation(info_fields, settings_dict['info-searches']):
+            return False
+        
+        print("ChatGPT may be sent the following information:\n-------------------")
+        for field in info_fields:
+            if field != '':
+                print(field)
+        
+        choice = input(f"-------------------\nConfirm that no sensitive information will be sent (y/n): ")
+        if 'y' in choice.lower():
+            return True
+        else:
+            return False
     else:
-        return False
+        return True
 
 # Make all necessary API lookups in an asynchronous manner, then synchronize threads
 # and return information in a dictionary for each API-lookup.

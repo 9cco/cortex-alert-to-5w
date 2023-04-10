@@ -4,6 +4,7 @@ from pprint import pprint
 
 from aux_functions import eprint
 from api_lookups import makeAsyncAPILookups
+from report_sections import writeReport
 
 # Read the input file specified by the path in the settings.
 def readInputFile(settings_dict):
@@ -127,6 +128,11 @@ def generateAlertDictionary(alert_string):
         
     return alert_dict 
 
+
+def getDay(timestamp):
+    match_object = re.search("([0-9]{1,2})[^0-9]{2}", timestamp)
+    return match_object.expand(r"\g<1>")
+
 # Generates a string containing the entire report.
 def generateReport(settings_dict, credentials):
     
@@ -138,8 +144,15 @@ def generateReport(settings_dict, credentials):
     # Based on the available information in the alert, make necessary lookups. These will
     # be used later when generating the report.
     apis_dict = makeAsyncAPILookups(alert_dict, settings_dict, credentials)
-    pprint(apis_dict)
-    exit(-1)
     
+    report = writeReport(alert_dict, settings_dict, apis_dict)
     
-    return report
+    # Generate output filename and output path and check if it already exists
+    output_filename = getDay(alert_dict['timestamp']) + "_(customer_id)_" + alert_dict['incident_id'] + ".md"
+    output_path = os.path.join(settings_dict['output-folder'], output_filename)
+    if os.path.exists(output_path):
+        choice = input(f"File {output_filename} already exists. Overwrite? (y/n): ")
+        if not 'y' in choice.lower():
+            exit(-1)
+    
+    return report, output_path

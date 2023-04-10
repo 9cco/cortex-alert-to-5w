@@ -2,6 +2,7 @@ import sys
 import re
 import os
 import json
+import ipaddress
 
 # Function for printing to stderr
 def eprint(*args, **kwargs):
@@ -62,4 +63,10 @@ def returnIfNonempty(description, input_string, end="\n"):
     if input_string != "" and input_string != "``":
         return f"{description}: {input_string}" + end
     else:
-        return "" + end
+        return ""
+
+def ipIsRemote(ip):
+    if ipaddress.ip_address(ip) in ipaddress.ip_network('192.168.0.0/16') or ipaddress.ip_address(ip) in ipaddress.ip_network('10.0.0.0/8') or ipaddress.ip_address(ip) in ipaddress.ip_network('172.16.0.0/12') or ipaddress.ip_address(ip) in ipaddress.ip_network('169.254.0.0/16'):
+        return False
+    else:
+        return True
