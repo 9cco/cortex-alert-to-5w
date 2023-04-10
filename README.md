@@ -1,2 +1,66 @@
-# Alert Transform
+Alert Transform
+======================================================
 
+![Visitors](https://visitor-badge.glitch.me/badge?page_id=9cco.cortex-alert-to-5w)
+[![Say Thanks!](https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg)](https://saythanks.io/to/9cco)
+
+The script converts a row of a Cortex alert into a 5W compliant report. 
+
+## Installation
+
+Download the repository either by clicking on **Code** in the top right, then click **Download ZIP** and finally extract the zip to a folder of your choice.
+Alternatively, if you have git installed, you can run the command `git clone https://github.com/9cco/cortex-alert-to-5w.git` which will download the
+repository automatically including the change-history.
+
+### Installing required python modules
+
+First of all you will need to have **python3** installed on your system as well as **pip**. Once you have this installed, insetall the required
+python packages by running
+```
+pip install -r requirements.txt
+```
+in the folder with the script.
+
+### Configuring settings
+
+Before using the script, you will have to configure a settings-file. An example file is included with the same `settings.example`. Rename this file to
+`settings.conf`. Then in the file, for each field that has a backet as a value like `<some description of the field>`, insert information of your choice. 
+The `settings.conf` file will be interpreted as a json file, so make sure to use json-formatting when inserting the information. For information on how
+to format a json file [see here](https://www.w3schools.com/js/js_json_syntax.asp).
+
+There are two keys that it is required that you fill out: 
+- `"cortex-output-file-path"`: For this key, insert the path to the file where you will be pasting the output you get from copying the row you find in Cortex
+	for the alert. Remember to use double back-slashes within the string. So if you would like to store Cortex data in the file `output.txt` in the folder
+	`C:\Users\<user>\Documents`, you would need to enter
+	
+		"cortex-output-file-path" : "C:\\Users\\<user>\\Documents\\output.txt"
+	
+- `"output-folder"`: This is the path to the folder where you want the resulting report-files to be stored.
+
+Another key you might want to configure if the `"info-searches"` key. The value of this key is a list of search strings which will be used to automatically search
+for sensitive information in the Cortex output before sending it off to third party services like Chat GPT.
+
+### Enabling API lookups
+
+Specifically we have functionality for lookup on AbusedIPDB, Virustotal and chatGPT. First you will need to gather the API-key for each of these services.
+You can find information about how do obtain these on these services respective websites, but they will all come in the form of a string of text.
+Create a folder named `credentials` in the same folder as the script. Then copy the respective API-keys into the files:
+- `abusedipdb_api_key.txt`,
+- `chatgpt_api_key.txt`,
+- `virustotal_api_key.txt`.
+
+This is all you need to do to use API-lookups, however if you don't want to leave these cleartext credentials on your harddrive, you can encrypt them
+with a password by running
+```
+python3 alert_transform.py --encrypt
+```
+
+## Use
+
+Once everything is set up, go to an alert in Cortex XDR. Make sure to use the default layout of fields by clicking the "three dots" and selecting *default layout*.
+Also make sure that all fields are included by checking the *select all* checkbox in the same menu. Now, right click somewhere in the alert row and select
+**copy entire row**. Go to the file you previously setup for dumping cortex output, open the file in your faviourite text-edit and paste it into the file (**ctrl-v**). Now open a powershell prompt, navigate to the folder with the script and run
+```
+python3 alert_transform.py
+```
+This wil generate the report in the folder you previously configured and open it in `notepad++` (if you are using another text-editor, you can configure the report to be opened in this by editing the `"text-program-path"` key in the `settings.conf` file.

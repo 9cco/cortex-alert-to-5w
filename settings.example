@@ -1,0 +1,29 @@
+{
+	"text-program-path" : "\"C:\\Program Files\\Notepad++\\notepad++.exe\"",
+	"credentials-folder" : "credentials",
+	"encrypted-credentials-name" : "api_credentials.json",
+	"cortex-output-file-path" : "<path to cortex dump file>",
+	"output-folder" : "<path to folder where report files will be stored>",
+	"common-process-names" : [
+		"explorer.exe",
+		"iexplore.exe",
+		"winlogon.exe",
+		"chrome.exe",
+		"edge.exe",
+		"firefox.exe",
+		"outlook.exe",
+		"sh",
+		"bash",
+		"cmd.exe",
+		"powershell.exe",
+		"whoami.exe"
+	],
+	"common-signatures" : [
+		"Microsoft Corporation",
+		"Google LLC"
+	],
+	"info-searches" : [
+		"<list of search terms of confidential information>"
+	],
+	"verify-outgoing" : false
+}
