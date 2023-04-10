@@ -63,4 +63,4 @@ Also make sure that all fields are included by checking the *select all* checkbo
 ```
 python3 alert_transform.py
 ```
-This wil generate the report in the folder you previously configured and open it in `notepad++` (if you are using another text-editor, you can configure the report to be opened in this by editing the `"text-program-path"` key in the `settings.conf` file.
+This wil generate the report in the folder you previously configured and open it in `notepad++` (if you are using another text-editor, you can configure the report to be opened in this by editing the `"text-program-path"` key in the `settings.conf` file).
