@@ -14,17 +14,20 @@ repository automatically including the change-history.
 
 ### Installing required python modules
 
-First of all you will need to have **python3** installed on your system as well as **pip**. Once you have this installed, insetall the required
+First of all you will need to have **python3** installed on your system as well as **pip**. Once you have this installed, install the required
 python packages by running
 ```
 pip install -r requirements.txt
 ```
-in the folder with the script.
+in the folder with the script. In windows, unless you have an alias for `pip`, you will need to do
+```
+python -m pip install -r requirements.txt
+```
 
 ### Configuring settings
 
 Before using the script, you will have to configure a settings-file. An example file is included with the same `settings.example`. Rename this file to
-`settings.conf`. Then in the file, for each field that has a backet as a value like `<some description of the field>`, insert information of your choice. 
+`settings.conf`. Then, in the file, for each field that has a backet as a value like `<some description of the field>`, insert information of your choice. 
 The `settings.conf` file will be interpreted as a json file, so make sure to use json-formatting when inserting the information. For information on how
 to format a json file [see here](https://www.w3schools.com/js/js_json_syntax.asp).
 
@@ -76,7 +79,7 @@ and change the path to the path where you placed the script files. You can also 
 
 Once everything is set up, go to an alert in Cortex XDR. Make sure to use the default layout of fields by clicking the "three dots" and selecting *default layout*.
 Also make sure that all fields are included by checking the *select all* checkbox in the same menu. Now, right click somewhere in the alert row and select
-**copy entire row**. Go to the file you previously setup for dumping cortex output, open the file in your faviourite text-edit and paste it into the file (**ctrl-v**). Now open a powershell prompt, navigate to the folder with the script and run
+**copy entire row**. Go to the file you previously setup for dumping cortex output, open the file in your faviourite text-edit and paste it into the file (**Ctrl**+**v**). Now open a powershell prompt, navigate to the folder with the script and run
 ```
 python3 alert_transform.py
 ```
