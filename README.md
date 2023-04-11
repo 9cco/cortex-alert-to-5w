@@ -4,7 +4,9 @@ Alert Transform
 ![Visitors](https://visitor-badge.glitch.me/badge?page_id=9cco.cortex-alert-to-5w)
 [![Say Thanks!](https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg)](https://saythanks.io/to/9cco)
 
-The script converts a row of a Cortex alert into a 5W compliant report. 
+The script converts a row of a Cortex alert into a 5W compliant report. It uses "machine-learning" (*[chat-GPT](https://platform.openai.com/docs/api-reference)*) to enrich the results as well as data
+from *[Virustotal](https://www.virustotal.com/gui/home/search)* and *[AbusedIPDB](https://www.abuseipdb.com/api.html)*. It implements automatic and manual searching for sensitive information and protects API credentials using *AES-256* symmetric
+encryption based on a key derived using a password and the *Argon2* memory-hard PBKDF. Also, everything is held together using a lot of *regex* :D 
 
 ## Installation
 
@@ -73,13 +75,13 @@ function gen {
 	py $script_path $args
 }
 ```
-and change the path to the path where you placed the script files. You can also change the function name `gen` to be anything you like, e.g., `report`. Now, when you open a new powershell prompt, you can execute the script by typing the command `gen`.
+and change the path to the path to the script `alert_transform.py` where you placed the script files. You can also change the function name `gen` to be anything you like, e.g., `report`. Now, when you open a new powershell prompt, you can execute the script by typing the command `gen`.
 
 ## Use
 
 Once everything is set up, go to an alert in Cortex XDR. Make sure to use the default layout of fields by clicking the "three dots" and selecting *default layout*.
 Also make sure that all fields are included by checking the *select all* checkbox in the same menu. Now, right click somewhere in the alert row and select
-**copy entire row**. Go to the file you previously setup for dumping cortex output, open the file in your faviourite text-edit and paste it into the file (**Ctrl**+**v**). Now open a powershell prompt, navigate to the folder with the script and run
+**copy entire row**. Go to the file you previously setup for dumping cortex output, open the file in your faviourite text-edit and paste it into the file (**Ctrl**+**v**). Now, if you have set up the accellerated workflow, as described above, all you need to do is to push the shortcut-key combination. If not, open a powershell prompt, navigate to the folder with the script and run
 ```
 python3 alert_transform.py
 ```

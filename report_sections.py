@@ -28,7 +28,7 @@ def writeWho(username, host, host_ip, host_os, os_sub_type):
         string += "\n"
     string += returnIfNonempty("Host", host)
     string += formatIPString(host_ip)
-    if not re.match(r"^.*Windows.*$", host_os) and host_os != "N/A":
+    if (not re.match(r"^.*Windows.*$", host_os) or re.match(r'^.*Server.*$', os_sub_type)) and host_os != "N/A":
         if host_os != "":
             string += f"OS: {host_os}"
             if os_sub_type != "":
