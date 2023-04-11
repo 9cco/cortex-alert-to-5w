@@ -6,8 +6,7 @@ Alert Transform
 
 The script converts a row of a Cortex alert into a 5W compliant report. It uses "machine-learning" (*[chat-GPT](https://platform.openai.com/docs/api-reference)*) to enrich the results as well as data
 from *[Virustotal](https://developers.virustotal.com/reference/overview)* and *[AbusedIPDB](https://www.abuseipdb.com/api.html)*. It implements automatic and manual searching for sensitive information and protects API credentials using *AES-256* symmetric
-encryption based on a key derived using a password and the *Argon2* memory-hard PBKDF. API requests are parallelized using the *asyncio* and *aiohttp* libraries. Also, everything is held together using a lot of *regex* ᵉʰᵉʰᵉ(\*\/∇＼⭒) 
-
+encryption based on a key derived using a password and the *Argon2* memory-hard PBKDF. API requests are parallelized using the *asyncio* and *aiohttp* libraries. Also, everything is held together using a lot of *regex* (˵ᵕ̴᷄ ˶̫ ˶ᵕ̴᷅˵)
 ## Installation
 
 Download the repository either by clicking on **Code** in the top right, then click **Download ZIP** and finally extract the zip to a folder of your choice.
