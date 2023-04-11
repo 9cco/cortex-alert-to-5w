@@ -66,6 +66,12 @@ def returnIfNonempty(description, input_string, end="\n"):
         return ""
 
 def ipIsRemote(ip):
+    # Check if IP is a valid IP string
+    try:
+        ipaddress.ip_address(ip)
+    except ValueError:
+        return False
+    # Check if IP is in a range of private addresses.
     if ipaddress.ip_address(ip) in ipaddress.ip_network('192.168.0.0/16') or ipaddress.ip_address(ip) in ipaddress.ip_network('10.0.0.0/8') or ipaddress.ip_address(ip) in ipaddress.ip_network('172.16.0.0/12') or ipaddress.ip_address(ip) in ipaddress.ip_network('169.254.0.0/16'):
         return False
     else:

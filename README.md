@@ -55,6 +55,23 @@ with a password by running
 python3 alert_transform.py --encrypt
 ```
 
+### Accellerating workflow
+
+In order to accellerate your workflow when using this script, it is highly recommended to make a shortkcut key-combination in order to execute it. In windows, do this by going to the file `alert_transform.py`, then right click and select *Create Shortcut*. Move the shortcut to where-ever you like, e.g., the Desktop. Right-click the shortcut, select *Properties* and enter your desired key in the field *Shortcut key:*. The shortcut key will then be **CTRL** + **ALT** + **\<your key\>**.
+
+For easier execution of the script in PowerShell, it is also recommended to make an alias for it in your PowerShell Profile script. This script is normally located in `C:\Users\<username>\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1`. Open the script in your favourite text editor, e.g. if using notepad++, you can execute the command
+```
+start notepad++ $profile
+```
+Then, paste in the following code,
+```
+function gen {
+	$script_path = "<path to python script>"
+	py $script_path $args
+}
+```
+and change the path to the path where you placed the script files. You can also change the function name `gen` to be anything you like, e.g., `report`. Now, when you open a new powershell prompt, you can execute the script by typing the command `gen`.
+
 ## Use
 
 Once everything is set up, go to an alert in Cortex XDR. Make sure to use the default layout of fields by clicking the "three dots" and selecting *default layout*.

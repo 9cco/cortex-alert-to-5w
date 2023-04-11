@@ -1,6 +1,7 @@
 import re
 
 from aux_functions import returnIfNonempty, ipIsRemote
+from xql_queries import generateXQLQuery
 
 def writeTitle(incident_id):
     string = f" | ID-{incident_id}\n"
@@ -81,7 +82,7 @@ def writeWhere(host, local_ip, remote_ip, source_zone, dest_zone, domain):
 
 def returnAPIReport(apis_dict, key):
     if key in apis_dict:
-        return apis_dict[key]
+        return apis_dict[key] + "\n"
     return ''
 
 def writeProcessSubsection(ps_name, ps_cmd, ps_sha256, ps_signature, vt_report, ch_report):
@@ -101,6 +102,10 @@ def defang(domain_string):
         return match_object.expand(r'\1`\2[.]\3[.]\4\5\6`\7')
     else:
         return  domain_string
+
+# Takes a string of an IPv4 and puts [.] instead of . and quotes (`) around it.
+def defangIP(ip):
+    return f"`{ip.replace('.', '[.]')}`"
         
 def writeFileSubsection(file_path, file_hash, vt_report):
     string = ''
@@ -162,10 +167,15 @@ def writeURLSubsection(remote_ip, url, user_agent, misc, dns_query):
         string += returnIfNonempty("DNS query", defang(dns_query))
     return string
 
+def defangAlertName(alert_name):
+    if not re.match(r'^Virus\/', alert_name):
+        return defang(alert_name)
+    return alert_name
+
 def writeWhat(alert_dict, apis_dict):
     # What section
     string = "\n\nWhat:  \n-------------------------------------------  \n\n"
-    string += returnIfNonempty("Alert name", defang(alert_dict['alert_name']))
+    string += returnIfNonempty("Alert name", defangAlertName(alert_dict['alert_name']))
     if not re.match(r"^\[ocd-xdr.*", alert_dict['alert_name']):
         string += returnIfNonempty("Description", defang(alert_dict['description']))
     
@@ -174,7 +184,8 @@ def writeWhat(alert_dict, apis_dict):
     
     string += returnIfNonempty("Action", alert_dict['action'])
     string += returnIfNonempty("Alert source", alert_dict['alert_source'])
-    string += returnIfNonempty("Module", alert_dict['module'])
+    if re.match(r'^Prevented', alert_dict['action']):
+        string += returnIfNonempty("Module", alert_dict['module'])
     
     prev_cmds = []
     
@@ -247,11 +258,12 @@ def writeReport(alert_dict, settings_dict, apis_dict):
     
     # When section
     report += "\n\nWhen:  \n-------------------------------------------  \n\n"
-    if alert_dict['timestamp'] != '':
-        report += alert_dict['timestamp'] + " UTC\n"
+    timestamp = alert_dict['timestamp']
+    if timestamp != '':
+        report += timestamp + " UTC\n"
     
     # Footer section
     report += "\n\n\n_____________________________________________________________________________\n"
-    report += "# Other notes\n\nSearching\n```XQL\n```\n"
+    report += f"# Other notes\n\nSearching\n```XQL\n{generateXQLQuery(timestamp)}```\n"
     
     return report

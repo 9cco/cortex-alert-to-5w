@@ -179,18 +179,21 @@ def loadCleartextCredentials(folder_name = 'credentials'):
     # Make a path starting at the script location.
     script_folder = os.path.normpath(os.path.dirname(os.path.realpath(__file__)))
     path = os.path.join(script_folder, folder_name)
+    
+    if not os.path.isdir(path):
+        raise Exception(f"loadCleartextCredentials ERROR: {path} is not a valid directory.")
 
     # Find files by listing the contents of folder_name and storing only paths to files.
-    files = [fname for fname in os.listdir(folder_name) if os.path.isfile(os.path.join(folder_name, fname))]
+    files = [fname for fname in os.listdir(path) if os.path.isfile(os.path.join(path, fname))]
 
     credz = []
     for file in files:
 
         name = re.sub(r'\.[^\.]+$', '', file)
-        path = os.path.join(folder_name, file)
+        f_path = os.path.join(path, file)
 
         # Read content of file
-        with open(path, 'r') as f:
+        with open(f_path, 'r') as f:
             data = f.read().strip()
 
         cred = Credential(name, data)
@@ -319,11 +322,13 @@ def combineCredentials(source_list, import_list):
 # adds all credentials together in a list of dictionaries and outputs this.
 def loadCredentials(folder_name = 'credentials', output_fn = 'api_credentials.json'):
     
+    print("Loading credentials from ", folder_name)
     # Load cleartext credentials.
     try:
         cleartext_credz = loadCleartextCredentials(folder_name = folder_name)
-    except:
+    except Exception as e:
         cleartext_credz = []
+        raise e
     
     # Load encrypted credentials to objects
     try:
