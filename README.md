@@ -5,8 +5,8 @@ Alert Transform
 [![Say Thanks!](https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg)](https://saythanks.io/to/9cco)
 
 The script converts a row of a Cortex alert into a 5W compliant report. It uses "machine-learning" (*[chat-GPT](https://platform.openai.com/docs/api-reference)*) to enrich the results as well as data
-from *[Virustotal](https://www.virustotal.com/gui/home/search)* and *[AbusedIPDB](https://www.abuseipdb.com/api.html)*. It implements automatic and manual searching for sensitive information and protects API credentials using *AES-256* symmetric
-encryption based on a key derived using a password and the *Argon2* memory-hard PBKDF. Also, everything is held together using a lot of *regex* :D 
+from *[Virustotal](https://developers.virustotal.com/reference/overview)* and *[AbusedIPDB](https://www.abuseipdb.com/api.html)*. It implements automatic and manual searching for sensitive information and protects API credentials using *AES-256* symmetric
+encryption based on a key derived using a password and the *Argon2* memory-hard PBKDF. API requests are parallelized using the *asyncio* and *aiohttp* libraries. Also, everything is held together using a lot of *regex* ᵉʰᵉʰᵉ(\*\/∇＼⭒) 
 
 ## Installation
 
