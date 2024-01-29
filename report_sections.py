@@ -22,7 +22,7 @@ def formatIPString(ip_string, prefix = "Host IP: "):
 
 # Who section
 def writeWho(username, host, host_ip, host_os, os_sub_type):
-    string = "Who:  \n-------------------------------------------  \n"
+    string = "Who:  \n-------------------------------------------  \n\n"
     string += returnIfNonempty("User", username)
     if username != "" and (host != "" or host_ip != ''):
         string += "\n"
@@ -44,7 +44,7 @@ def formatZones(string):
         return split_string[0]
     # If normal string: make some space between commas.
     elif len(split_string) > 0:
-        return re.sub(r',([^,])', r', \1', source_zone)
+        return re.sub(r',([^,])', r', \1', string)
     else:
         return string
 
@@ -68,12 +68,12 @@ def writeWhere(host, local_ip, remote_ip, source_zone, dest_zone, domain):
         elif not isInternalIP(local_ip) and not isInternalIP(remote_ip):
             string += "WAN\n"
         else:
-            string += "From \n"
+            string += "From: "
             if isInternalIP(local_ip):
                 string += "Internal network\n"
             else:
                 string += "WAN\n"
-            string += " to \n"
+            string += "To: "
             if isInternalIP(remote_ip):
                 string += "Internal endpoint\n"
             else:
@@ -85,9 +85,10 @@ def returnAPIReport(apis_dict, key):
         return apis_dict[key] + "\n"
     return ''
 
-def writeProcessSubsection(ps_name, ps_cmd, ps_sha256, ps_signature, vt_report, ch_report):
+def writeProcessSubsection(ps_name, ps_path, ps_cmd, ps_sha256, ps_signature, vt_report, ch_report):
     # # Processes subsection
-    string = f"Command: `{ps_cmd}`\n"
+    string = returnIfNonempty("Path", ps_path)
+    string += f"Command: `{ps_cmd}`\n"
     string += returnIfNonempty("SHA256", ps_sha256)
     string += returnIfNonempty("Signer", ps_signature)
     string += vt_report
@@ -107,10 +108,11 @@ def defang(domain_string):
 def defangIP(ip):
     return f"`{ip.replace('.', '[.]')}`"
         
-def writeFileSubsection(file_path, file_hash, vt_report):
+def writeFileSubsection(file_name, file_path, file_hash, vt_report):
     string = ''
     if file_path != '':
         string += "\nFile details:\n"
+        string += returnIfNonempty("Name", file_name)
         string += returnIfNonempty("Path", file_path)
         string += returnIfNonempty("SHA256", file_hash)
         string += vt_report
@@ -195,7 +197,7 @@ def writeWhat(alert_dict, apis_dict):
         vt_report = returnAPIReport(apis_dict, "initiator_vt")
         ch_report = returnAPIReport(apis_dict, "initiator_ch")
         string += "\nInitiator details:\n"
-        string += writeProcessSubsection(alert_dict['initiator_name'], alert_dict['initiator_cmd'], alert_dict['initiator_sha256'],\
+        string += writeProcessSubsection(alert_dict['initiator_name'], alert_dict['initiator_path'], alert_dict['initiator_cmd'], alert_dict['initiator_sha256'],\
             alert_dict['initiator_signature'], vt_report, ch_report)
     
     # CGO process section
@@ -205,7 +207,7 @@ def writeWhat(alert_dict, apis_dict):
         string += "\nCausality group owner details:\n"
         if alert_dict['cgo_cmd'] not in prev_cmds:
             prev_cmds.append(alert_dict['cgo_cmd'])
-            string += writeProcessSubsection(alert_dict['cgo_name'], alert_dict['cgo_cmd'], alert_dict['cgo_sha256'],\
+            string += writeProcessSubsection(alert_dict['cgo_name'], alert_dict['cgo_path'], alert_dict['cgo_cmd'], alert_dict['cgo_sha256'],\
                 alert_dict['cgo_signature'], vt_report, ch_report)
         else:
             string += "Same as initiator.\n"
@@ -216,11 +218,11 @@ def writeWhat(alert_dict, apis_dict):
         ch_report = returnAPIReport(apis_dict, "target_process_ch")
         string += "\nTarget process details:\n"
         prev_cmds.append(alert_dict['target_process_cmd'])
-        string += writeProcessSubsection(alert_dict['target_process_name'], alert_dict['target_process_cmd'], alert_dict['target_process_sha256'],\
+        string += writeProcessSubsection(alert_dict['target_process_name'], alert_dict['target_process_path'], alert_dict['target_process_cmd'], alert_dict['target_process_sha256'],\
             alert_dict['target_process_signature'], vt_report, ch_report)
     
     # # File subsection
-    string += writeFileSubsection(alert_dict['file_path'], alert_dict['file_sha256'], returnAPIReport(apis_dict, "file_vt"))
+    string += writeFileSubsection(alert_dict['file_name'], alert_dict['file_path'], alert_dict['file_sha256'], returnAPIReport(apis_dict, "file_vt"))
     
     # Macro
     string += returnIfNonempty("Macro SHA256", alert_dict['file_macro_sha256'])
@@ -257,10 +259,15 @@ def writeReport(alert_dict, settings_dict, apis_dict):
     report += returnAPIReport(apis_dict, "why_ch")
     
     # When section
-    report += "\n\nWhen:  \n-------------------------------------------  \n\n"
+    report += "\n\n\nWhen:  \n-------------------------------------------  \n\n"
     timestamp = alert_dict['timestamp']
     if timestamp != '':
         report += timestamp + " UTC\n"
+    
+    # Recommendation section
+    report += "\n\nRecommendations:  \n-------------------------------------------  \n\n"
+    # Conclusion section
+    report += "\n\n\nConclusion:  \n-------------------------------------------  \n\n"
     
     # Footer section
     report += "\n\n\n_____________________________________________________________________________\n"

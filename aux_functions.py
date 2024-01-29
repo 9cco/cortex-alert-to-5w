@@ -43,6 +43,16 @@ def loadJsonFile(filename):
     raise Exception(f"ERROR: Could not find settings file at: \n{conf_path}")
     return
 
+def loadJsonPath(file_path):
+    
+    if os.path.exists(file_path):
+        with open(file_path, "r") as f:
+            conf_dict = json.load(f)
+        return conf_dict
+    
+    raise Exception(f"ERROR: Could not find settings file at: \n{file_path}")
+    return
+
 def hasCommonName(ps_name, name_list):
     if ps_name.lower() in name_list:
         return True

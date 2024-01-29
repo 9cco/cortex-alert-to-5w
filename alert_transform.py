@@ -50,10 +50,11 @@ def main(argv):
         
         
         # Save file
-        with open(output_path, "w") as file:
+        with open(output_path, "w", encoding="utf8") as file:
             print(report, file=file, end='')
             
-        cmd = settings_dict['text-program-path'] + " " + output_path
+        cmd = settings_dict['text-program-path'] + " \"" + output_path + "\""
+        print(cmd)
         os.system(cmd)
     else:
         

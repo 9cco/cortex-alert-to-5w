@@ -19,5 +19,5 @@ def generateXQLQuery(timestamp, timestamp_format = "%b %d %Y %H:%M:%S", xql_time
     advanced_time_str = advanced_time.strftime(xql_time_format)
     retarded_time_str = retarded_time.strftime(xql_time_format)
     
-    query = f'config case_sensitive = false timeframe between "{retarded_time_str}" and "{advanced_time_str}" |\n'
+    query = f'config case_sensitive = false timeframe between "{retarded_time_str}" and "{advanced_time_str}"\n'
     return query

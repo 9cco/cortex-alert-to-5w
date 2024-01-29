@@ -82,7 +82,9 @@ async def virustotalHashReport(session, file_hash, vt_api, id):
         except:
             print("Exception caught while printing virustotal file hash", file=sys.stderr)
     else:
-        raise Exception(f"virustotalHashReport ERROR: File hash '{file_hash}' is not a file hash")
+        print(f"virustotalHashReport ERROR: File hash '{file_hash}' is not a file hash", file=sys.stderr)
+        report += "Error when generating Virustotal report"
+#        raise Exception(f"virustotalHashReport ERROR: File hash '{file_hash}' is not a file hash")
     return id, report
 
 async def getChatGPTAnswer(session, prompt, api_key, temp=0.24, best_of = 3, max_tokens = 300):
@@ -284,6 +286,8 @@ def containsSensitiveInformation(infos, searches):
     
 # Go through all information that will be sent to chat GPT and make the user verify that the information can be sent to chat GPT
 def verifyChatGPTUsage(alert_dict, settings_dict):
+    if settings_dict['use-chat'] == False:
+        return False
     if settings_dict['verify-outgoing']:
         # Gather all sending information:
         info_fields = [alert_dict['initiator_name'], alert_dict['cgo_name'], alert_dict['target_process_name'], alert_dict['alert_name']]
@@ -333,7 +337,7 @@ async def asyncAPILookups(alert_dict, settings_dict, credentials):
             alert_dict['target_process_signature'], settings_dict, vt_api, ch_api, 'target_process', use_chat = use_chat)
         
         # File check.
-        if alert_dict['file_path'] != '':
+        if re.match("^[A-Fa-f0-9]{4,64}$", alert_dict['file_sha256']):
             task = asyncio.create_task(virustotalHashReport(session, alert_dict['file_sha256'], vt_api, "file_vt"))
             tasks.append(task)
         

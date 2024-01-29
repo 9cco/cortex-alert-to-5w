@@ -2,7 +2,7 @@ import os
 import re
 from pprint import pprint
 
-from aux_functions import eprint
+from aux_functions import eprint, loadJsonPath
 from api_lookups import makeAsyncAPILookups
 from report_sections import writeReport
 
@@ -10,7 +10,7 @@ from report_sections import writeReport
 def readInputFile(settings_dict):
     file_path = settings_dict['cortex-output-file-path']
     if os.path.exists(file_path):
-        with open(file_path, "r") as file:
+        with open(file_path, "r", encoding="utf8") as file:
             alert_string = file.read()
         return alert_string
     else:
@@ -35,10 +35,12 @@ def generateAlertDictionary(alert_string):
         alert_name = match_object.expand(r"\g<13>")
         description = match_object.expand(r"\g<14>")
         initiator_name = match_object.expand(r"\g<16>")
+        initiator_path = match_object.expand(r"\g<19>")
         initiator_cmd = match_object.expand(r"\g<20>")
         initiator_sha256 = match_object.expand(r"\g<21>")
         initiator_signature = match_object.expand(r"\g<24>")
         CGO_name = match_object.expand(r"\g<26>")
+        CGO_path = match_object.expand(r"\g<28>")
         CGO_cmd = match_object.expand(r"\g<27>")
         CGO_sha256 = match_object.expand(r"\g<29>")
         CGO_signature = match_object.expand(r"\g<32>")
@@ -46,29 +48,30 @@ def generateAlertDictionary(alert_string):
         target_process_cmd = match_object.expand(r"\g<35>")
         target_process_sha256 = match_object.expand(r"\g<38>")
         target_process_signature = match_object.expand(r"\g<37>")
-        file_path = match_object.expand(r"\g<39>")
-        file_sha256 = match_object.expand(r"\g<42>")
-        file_macro_sha256 = match_object.expand(r"\g<40>")
-        registry_data = match_object.expand(r"\g<43>")
-        registry_key = match_object.expand(r"\g<44>")
-        local_ip = match_object.expand(r"\g<45>")
-        local_port = match_object.expand(r"\g<46>")
-        remote_ip = match_object.expand(r"\g<47>")
-        remote_port = match_object.expand(r"\g<48>")
-        remote_host = match_object.expand(r"\g<49>")
-        app_id = match_object.expand(r"\g<50>")
-        os_sub_type = match_object.expand(r"\g<64>")
-        source_zone = match_object.expand(r"\g<65>")
-        dest_zone = match_object.expand(r"\g<66>")
-        url = match_object.expand(r"\g<72>")
-        email_subject = match_object.expand(r"\g<73>")
-        email_sender = match_object.expand(r"\g<74>")
-        email_recipient = match_object.expand(r"\g<75>")
-        misc = match_object.expand(r"\g<81>")
-        domain = match_object.expand(r"\g<84>")
-        module = match_object.expand(r"\g<86>")
-        dns_query = match_object.expand(r"\g<88>")
-        user_agent = match_object.expand(r"\g<103>")
+        file_name = match_object.expand(r"\g<39>")
+        file_path = match_object.expand(r"\g<40>")
+        file_sha256 = match_object.expand(r"\g<43>")
+        file_macro_sha256 = match_object.expand(r"\g<41>")
+        registry_data = match_object.expand(r"\g<44>")
+        registry_key = match_object.expand(r"\g<45>")
+        local_ip = match_object.expand(r"\g<46>")
+        local_port = match_object.expand(r"\g<47>")
+        remote_ip = match_object.expand(r"\g<48>")
+        remote_port = match_object.expand(r"\g<49>")
+        remote_host = match_object.expand(r"\g<50>")
+        app_id = match_object.expand(r"\g<51>")
+        os_sub_type = match_object.expand(r"\g<65>")
+        source_zone = match_object.expand(r"\g<66>")
+        dest_zone = match_object.expand(r"\g<67>")
+        url = match_object.expand(r"\g<73>")
+        email_subject = match_object.expand(r"\g<74>")
+        email_sender = match_object.expand(r"\g<75>")
+        email_recipient = match_object.expand(r"\g<76>")
+        misc = match_object.expand(r"\g<82>")
+        domain = match_object.expand(r"\g<85>")
+        module = match_object.expand(r"\g<87>")
+        dns_query = match_object.expand(r"\g<89>")
+        user_agent = match_object.expand(r"\g<104>")
 
         alert_dict = {
             "alert_id": alert_id,
@@ -83,17 +86,21 @@ def generateAlertDictionary(alert_string):
             "alert_name": alert_name,
             "description": description,
             "initiator_name": initiator_name,
+            "initiator_path": initiator_path,
             "initiator_cmd": initiator_cmd,
             "initiator_sha256": initiator_sha256,
             "initiator_signature": initiator_signature,
             "cgo_name": CGO_name,
+            "cgo_path": CGO_path,
             "cgo_cmd": CGO_cmd,
             "cgo_sha256": CGO_sha256,
             "cgo_signature": CGO_signature,
             "target_process_name": target_process_name,
+            "target_process_path": "",
             "target_process_cmd": target_process_cmd,
             "target_process_sha256": target_process_sha256,
             "target_process_signature": target_process_signature,
+            "file_name": file_name,
             "file_path": file_path,
             "file_sha256": file_sha256,
             "file_macro_sha256": file_macro_sha256,
@@ -147,10 +154,26 @@ def generateReport(settings_dict, credentials):
     
     report = writeReport(alert_dict, settings_dict, apis_dict)
     
+    # Finding customer name
+    code_path = os.path.normpath(settings_dict['code-names'])
+    code_dict = loadJsonPath(code_path)
+    
+    customer_name = input("Write customer name (empty to cancel): ").lower()
+    code = ''
+    if customer_name != '':
+        for key in code_dict:
+            if customer_name in code_dict[key].lower():
+                code = key
+                break
+    
     # Generate output filename and output path and check if it already exists
-    output_filename = getDay(alert_dict['timestamp']) + "_(customer_id)_" + alert_dict['incident_id'] + ".md"
-    output_path = os.path.join(settings_dict['output-folder'], output_filename)
+    if code == '':
+        output_filename = getDay(alert_dict['timestamp']) + "_(customer_id)_" + alert_dict['incident_id'] + ".md"
+    else:
+        output_filename = f"{getDay(alert_dict['timestamp'])}_{code}_{alert_dict['incident_id']}.md"
+    output_path = os.path.normpath(os.path.join(settings_dict['output-folder'], output_filename))
     if os.path.exists(output_path):
+        print(output_path)
         choice = input(f"File {output_filename} already exists. Overwrite? (y/n): ")
         if not 'y' in choice.lower():
             exit(-1)
